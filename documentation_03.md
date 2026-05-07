@@ -1,6 +1,3 @@
-## DOCUMENT 3 — Config Schema Reference (Revised)
-
-````markdown id="cfgdoc-rev-01"
 # Config Schema Reference
 
 This document specifies the **complete, enforceable contract** for ConfigForge configuration files, including:
@@ -11,8 +8,7 @@ This document specifies the **complete, enforceable contract** for ConfigForge c
 - Versioning and compatibility rules
 - Worked examples
 
-> 📌 Decision:
-> The **Zod schema is the source of truth** for runtime validation.  
+> Decision: The **Zod schema is the source of truth** for runtime validation.
 > JSON Schema is provided for tooling (editors, LLM prompt injection), but the runtime enforces Zod + semantic validation.
 
 ---
@@ -33,7 +29,7 @@ export function loadConfig(path = "./config/app.json"): unknown {
   }
   return JSON.parse(raw);
 }
-````
+```
 
 ---
 
@@ -53,8 +49,7 @@ export function loadConfig(path = "./config/app.json"): unknown {
       "required": ["name"],
       "additionalProperties": false,
       "properties": {
-        "name": { "type": "string", "minLength": 1, "maxLength": 120 },
-        "locale": { "type": "string", "default": "en" }
+        "name": { "type": "string", "minLength": 1, "maxLength": 120 }
       }
     },
 
@@ -64,8 +59,10 @@ export function loadConfig(path = "./config/app.json"): unknown {
       "properties": {
         "methods": {
           "type": "array",
-          "items": { "type": "string", "enum": ["email", "google", "github"] },
-          "uniqueItems": true
+          "items": { "type": "string", "enum": ["email", "google"] },
+          "minItems": 1,
+          "uniqueItems": true,
+          "default": ["email"]
         }
       }
     },
@@ -93,17 +90,6 @@ export function loadConfig(path = "./config/app.json"): unknown {
           "properties": {
             "on_create": { "type": "boolean", "default": false },
             "on_update": { "type": "boolean", "default": false }
-          }
-        },
-        "i18n": {
-          "type": "object",
-          "additionalProperties": false,
-          "properties": {
-            "locales": {
-              "type": "array",
-              "items": { "type": "string" },
-              "minItems": 1
-            }
           }
         }
       }
@@ -215,12 +201,11 @@ export const pageSchema = z.object({
 export const configSchema = z.object({
   version: z.string().regex(/^[0-9]+\.[0-9]+$/),
   app: z.object({
-    name: z.string().min(1).max(120),
-    locale: z.string().default("en")
+    name: z.string().min(1).max(120)
   }).strict(),
   auth: z.object({
-    methods: z.array(z.enum(["email", "google", "github"])).optional()
-  }).strict().optional(),
+    methods: z.array(z.enum(["email", "google"])).min(1).default(["email"])
+  }).default({ methods: ["email"] }),
   entities: z.array(entitySchema).min(1),
   pages: z.array(pageSchema).min(1),
   features: z.object({
@@ -228,15 +213,16 @@ export const configSchema = z.object({
     notifications: z.object({
       on_create: z.boolean().default(false),
       on_update: z.boolean().default(false)
-    }).default({}),
-    i18n: z.object({
-      locales: z.array(z.string()).min(1)
-    }).optional()
+    }).default({})
   }).default({})
 }).strict();
 
 export type Config = z.infer<typeof configSchema>;
 ```
+
+> Decision: **auth.methods uses `.min(1).default(["email"])` — no github in enum.**
+> Rejected: Including `github` in the enum and making auth.methods fully optional with no minimum.
+> Why: The project only implements email and Google OAuth. Including github in the enum would create a false promise. `.min(1)` prevents an empty methods array (which would render a login page with no options). `.default(["email"])` ensures configs without an auth section still produce a functional login.
 
 ---
 
@@ -365,11 +351,11 @@ export function validateConfig(raw: unknown): ValidationResult<Config> {
 
 ## 6. Partial Validation Behavior (Critical Decision)
 
-> 📌 Decision: ConfigForge uses **strict fail-fast mode**
+> Decision: ConfigForge uses **strict fail-fast mode**.
 
 ### Meaning:
 
-* If ANY error exists → config is rejected
+* If ANY error exists, the config is rejected
 * No partial rendering
 * No partial API generation
 
@@ -393,16 +379,16 @@ export function validateConfig(raw: unknown): ValidationResult<Config> {
 "version": "major.minor"
 ```
 
----
-
 ### Compatibility Rules
 
-| Change Type       | Version Impact |
-| ----------------- | -------------- |
-| Add field         | Minor          |
-| Remove field      | Major          |
-| Change field type | Major          |
-| Add page          | Minor          |
+| Change Type | Version Impact |
+|---|---|
+| Add field | Minor |
+| Remove field | Major |
+| Change field type | Major |
+| Add page | Minor |
+| Add entity | Minor |
+| Remove entity | Major |
 
 ---
 
@@ -412,16 +398,14 @@ export function validateConfig(raw: unknown): ValidationResult<Config> {
 type ChangeType =
   | "ADD_FIELD"
   | "REMOVE_FIELD"
-  | "CHANGE_TYPE"
-  | "ADD_ENTITY";
-
-export function classifyChange(oldConfig: Config, newConfig: Config): ChangeType[] {
-  // Simplified example
-  return [];
-}
+  | "CHANGE_FIELD_TYPE"
+  | "ADD_ENTITY"
+  | "REMOVE_ENTITY"
+  | "ADD_PAGE"
+  | "REMOVE_PAGE";
 ```
 
-(Full migration handling defined in Database Documentation)
+Full diff engine implementation is defined in doc_06 (Database).
 
 ---
 
@@ -439,8 +423,6 @@ export function classifyChange(oldConfig: Config, newConfig: Config): ChangeType
   ]
 }
 ```
-
----
 
 ### Output
 
@@ -466,62 +448,28 @@ export function classifyChange(oldConfig: Config, newConfig: Config): ChangeType
 
 ## 10. Failure Modes
 
-### Invalid JSON
-
-* Throws parsing error
-
-### Schema violation
-
-* Returns structured Zod errors
-
-### Semantic violation
-
-* Returns cross-reference errors
-
-### Oversized config
-
-* Rejected before validation
+| What can fail | What the system does | How to debug |
+|---|---|---|
+| Invalid JSON syntax | JSON.parse throws error | Check for trailing commas, missing quotes |
+| Schema violation (wrong types) | Zod returns structured errors | Review error path and message |
+| Semantic violation (dangling reference) | semanticValidate returns errors | Check entity/page cross-references |
+| Oversized config (>256KB) | Rejected before validation | Reduce config size |
+| auth.methods empty | Zod `.min(1)` rejects | Ensure at least one auth method |
+| auth.methods missing | Defaults to `["email"]` | Expected behavior |
+| Select field without options | Semantic validation error | Add options array to select fields |
 
 ---
 
 ## 11. LLM Compatibility Notes
 
-* JSON Schema injected into prompt
-* Zod validation enforced post-generation
-* Fail-fast ensures LLM output correctness
+* JSON Schema is injected into the LLM prompt so the model knows the expected structure
+* Zod validation is enforced on LLM output (post-generation)
+* Fail-fast ensures invalid LLM output is rejected, triggering a retry
+* Maximum 3 retries before returning error (see doc_08 section 4)
 
 ---
 
-```
-
----
-
-# ✅ What was fixed (Critical)
-
-This document now properly:
-
-### ✔ Defines FULL schema (not partial)
-### ✔ Implements real Zod schema
-### ✔ Defines semantic validation
-### ✔ Fixes partial validation problem (explicit fail-fast)
-### ✔ Provides validation pipeline code
-### ✔ Defines config versioning rules
-### ✔ Adds real failure behavior
-
----
-
-## 🚀 Next
-
-Send:
-👉 **DOCUMENT 6 — Database**
-
-This is the MOST critical one.
-
-We will fix:
-- schema evolution (deep)
-- breaking vs non-breaking logic
-- migration system (fully specified)
-- JSONB handling properly
-
-This is where most projects fail — we’ll make yours solid.
-```
+CHANGES APPLIED:
+- Guide sections used: 2.2 (auth.methods fix), 11 (multi-language removal)
+- Contradictions resolved: auth.methods now uses `z.enum(["email","google"])` (no github), `.min(1)` (prevents empty), `.default(["email"])` (ensures fallback); auth object uses `.default({ methods: ["email"] })` (ensures auth section always exists); removed `locale` from app object; removed `i18n` from features (both JSON Schema and Zod); standardized ChangeType names to match doc_06 (CHANGE_FIELD_TYPE, REMOVE_ENTITY); JSON Schema auth.methods now has `minItems: 1`
+- Removed: `github` from auth enum; `app.locale` field; `features.i18n` section; `CHANGE_TYPE` (renamed to `CHANGE_FIELD_TYPE`); trailing "what was fixed" commentary block; emoji from headers; wrapping code fences

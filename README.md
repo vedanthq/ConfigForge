@@ -1,194 +1,56 @@
-# 🧠 Expert Review & Feasibility Analysis — ConfigForge
+# ConfigForge
 
-## 🎯 Context
+> Define your app in JSON. Get a full-stack application instantly.
 
-I am building a project called **ConfigForge** — a config-driven AI app generator platform.
+ConfigForge is a **config-driven application runtime** that interprets a declarative JSON configuration and produces a working full-stack application — without generating code files.
 
-> Tagline: *Define your app in JSON. Get a full-stack application instantly.*
+## Live Demo
 
-Core idea:
+- **Frontend**: [your-frontend-url.vercel.app]
+- **Backend**: [your-backend-url.railway.app]
 
-* Input → JSON config
-* Output → fully working full-stack app:
+## Features
 
-  * Frontend (Next.js 14 + React + Tailwind)
-  * Backend (Node.js + TypeScript + Express/Fastify)
-  * Database (PostgreSQL with JSONB hybrid)
-  * Authentication (NextAuth.js)
-  * Features (CSV import, notifications, i18n, etc.)
+1. **CSV Import** — Upload, map columns to fields, validate per row, import with results
+2. **Event-Based Notifications** — Config-driven email alerts on entity lifecycle events
+3. **Multiple Login Methods** — `auth.methods` array controls email and/or Google OAuth
+4. **LLM Config Generation** (Bonus) — Natural language to validated JSON config via Claude API
 
-The system dynamically generates:
+## Stack
 
-* UI (forms, dashboards, tables)
-* APIs (CRUD endpoints)
-* Database schema
-* Auth system
-* Runtime behavior
+| Layer | Technology |
+|-------|-----------|
+| Frontend | Next.js 14, React, Tailwind CSS |
+| Backend | Node.js, TypeScript, Express |
+| Database | PostgreSQL (JSONB hybrid) |
+| Auth | NextAuth.js (email + Google OAuth) |
+| Email | Nodemailer |
+| AI | Anthropic Claude API |
 
-⚠️ NOTHING is hardcoded. Everything is config-driven.
+## Quick Start
 
----
+```bash
+# Clone
+git clone https://github.com/your-username/configforge.git && cd configforge
 
-## 🧩 Architecture Summary
+# Frontend
+cd frontend && npm install && cp .env.example .env.local
 
-System layers:
+# Backend
+cd ../backend && npm install && cp .env.example .env
 
-1. Config Loader + Validator (Zod)
-2. Frontend Renderer (component registry pattern)
-3. API Generator (dynamic route registration)
-4. Database Engine (Postgres + JSONB hybrid)
-5. Authentication System (multi-method)
-6. Event System (notifications via EventEmitter + email)
+# Database
+npx knex migrate:latest
 
----
+# Run (two terminals)
+cd backend && npm run dev
+cd frontend && npm run dev
+```
 
-## ⚙️ Key Features
+## Documentation
 
-* Dynamic UI rendering from JSON
-* Dynamic API generation (no hardcoded routes)
-* Config-driven DB schema
-* Email + OAuth authentication
-* CSV import system
-* Event-based notifications
-* Multi-language support (i18n)
-* LLM-based config generation (natural language → JSON config)
+See `documentation_01.md` through `documentation_16.md` for complete technical documentation.
 
----
+## License
 
-## 🧪 Critical Constraints
-
-The system MUST:
-
-* Handle incomplete configs
-* Handle inconsistent schemas
-* Handle unknown components
-* Never crash due to config errors
-* Be extensible without rewriting core logic
-
----
-
-## 📌 Your Role
-
-Act as:
-
-* Senior Software Architect
-* Startup CTO
-* Product Judge
-
-Be **brutally honest and deeply technical**.
-
----
-
-## 🔍 What I Want You To Analyze
-
-### 1. 🏗️ Architecture Review
-
-* Is this architecture scalable?
-* Where will it break first?
-* Any anti-patterns or bad design decisions?
-* What parts are over-engineered vs under-designed?
-
----
-
-### 2. ⚠️ Feasibility (VERY IMPORTANT)
-
-* Can this realistically be built in a hackathon / short timeline?
-* Which parts are too ambitious?
-* What should I simplify immediately?
-* What is the **true MVP**?
-
----
-
-### 3. 🚨 Critical Mistakes to Avoid
-
-List **specific, real-world mistakes** such as:
-
-* Config-driven system pitfalls
-* Runtime schema generation risks
-* Security vulnerabilities
-* Performance bottlenecks
-* Maintainability issues
-
----
-
-### 4. 🚀 How To Make It 10x Better
-
-* What would make this **market-ready**
-* What features would differentiate it from tools like Base44
-* What would impress investors or judges
-* What hidden opportunities am I missing?
-
----
-
-### 5. 🎯 Feature Prioritization
-
-Categorize:
-
-* MUST BUILD (core)
-* SHOULD BUILD (important)
-* AVOID (waste of time for now)
-
----
-
-### 6. 🧠 Edge Cases & Failure Points
-
-* Where will the system fail?
-* How to make it resilient?
-* What happens with:
-
-  * broken config
-  * invalid schema
-  * unknown components
-  * DB mismatch
-
----
-
-### 7. 🧑‍💻 Developer Experience (DX)
-
-* Is the config design intuitive?
-* Is extensibility clean or messy?
-* How to improve developer onboarding?
-
----
-
-### 8. 📊 Product & Market Perspective
-
-* Is this a viable startup idea?
-* Who are real competitors?
-* What is missing to compete at industry level?
-
----
-
-## ⚠️ Instructions
-
-* Do NOT be polite — be critical
-* Point out flaws clearly
-* Suggest better alternatives
-* Think like you're reviewing a **$1M startup pitch**
-
----
-
-## 🎯 Final Goal
-
-Help me turn this into:
-
-> A scalable, production-grade, market-leading AI app generator platform
-
----
-
----
-
-### 🔥 Why this is powerful
-
-This prompt forces Claude to:
-
-* Think like a **judge + architect**
-* Identify **real risks**
-* Give **actionable improvements**
-
----
-
-If you want next step, I can:
-
-* Turn Claude’s answer into a **final winning architecture**
-* Or give you a **“Top 1% project strategy”** that most people won’t even think of 😏
+MIT

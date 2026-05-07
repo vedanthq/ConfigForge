@@ -96,13 +96,16 @@ const entitySchema = z.object({
 
 const pageSchema = z.object({
   path: z.string().regex(/^\/[a-zA-Z0-9\/\-]*$/),
-  type: z.enum(["list", "form", "detail"]),
+  type: z.enum(["list", "form", "detail", "dashboard"]),
   entity: z.string()
 });
 
 export const configSchema = z.object({
   version: z.string(),
   app: z.object({ name: z.string() }),
+  auth: z.object({
+    methods: z.array(z.enum(["email", "google"])).min(1).default(["email"])
+  }).default({ methods: ["email"] }),
   entities: z.array(entitySchema),
   pages: z.array(pageSchema)
 });
@@ -418,45 +421,3 @@ logger.error("Validation failed", errors);
 | Hot reload           | No downtime         | Complexity             |
 | JSONB schema         | Flexible            | Query complexity       |
 | Shared DB            | Simpler ops         | Needs strong isolation |
-
----
-
-```
-
----
-
-# ✅ What was fixed (Critical)
-
-This document now properly defines:
-
-### ✔ Partial validation behavior (FIXED)
-- Explicit schema + semantic validation
-- Defined result object
-
-### ✔ Hot reload (FIXED)
-- Full mechanism + code
-- In-flight request handling
-
-### ✔ Tenant isolation (FIXED)
-- Proper definition: app ≠ user
-- app_id + user_id enforced
-
-### ✔ Real architecture depth (FIXED)
-- Lifecycle defined
-- Runtime explained
-
----
-
-## 🚀 Next
-
-Send:
-👉 **DOCUMENT 3 — Config Schema**
-
-We’ll fix:
-- schema completeness
-- validation gaps
-- config edge cases
-- LLM compatibility
-
-And make it **production-grade solid**.
-```

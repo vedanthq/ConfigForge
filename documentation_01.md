@@ -1,12 +1,9 @@
-## DOCUMENT 1 — README.md (Revised)
-
-````markdown
 # ConfigForge
 
 > Define your app in JSON. Get a full-stack application instantly.
 
 ![Build](https://img.shields.io/badge/build-passing-brightgreen)
-![Version](https://img.shields.io/badge/version-0.2.0-blue)
+![Version](https://img.shields.io/badge/version-1.0-blue)
 ![License](https://img.shields.io/badge/license-MIT-green)
 
 ---
@@ -20,7 +17,8 @@
 - [Architecture at a Glance](#architecture-at-a-glance)
 - [Quick Start](#quick-start)
 - [Configuration Example](#configuration-example)
-- [Failure Modes (Read This)](#failure-modes-read-this)
+- [Live Demo](#live-demo)
+- [Failure Modes](#failure-modes)
 - [Documentation](#documentation)
 - [License](#license)
 
@@ -32,196 +30,167 @@ ConfigForge is a **config-driven application runtime** that interprets a declara
 
 It does **not generate code files**. Instead, it:
 - Loads configuration at runtime
-- Validates and normalizes it
-- Dynamically registers APIs
-- Dynamically renders UI
-- Dynamically maps data to a database schema
+- Validates and normalizes it (Zod + semantic validation)
+- Dynamically registers backend API routes
+- Dynamically renders frontend UI
+- Dynamically maps data to PostgreSQL via JSONB
 
-> 📌 Decision:
-> ConfigForge uses **runtime interpretation instead of code generation**.
-> 
-> **Why:**
-> - Enables hot config updates without rebuild
-> - Keeps system flexible and dynamic
+> Decision: ConfigForge uses **runtime interpretation instead of code generation**.
 >
-> **Trade-off:**
-> - Higher runtime complexity
-> - Requires strong validation and error handling layers
+> **Why:** Enables hot config updates without rebuild. Keeps system flexible and dynamic.
+>
+> **Trade-off:** Higher runtime complexity. Requires strong validation and error handling layers.
 
 ---
 
 ## Core Concepts
 
 | Concept | Description |
-|--------|------------|
-| Config | JSON file defining entire application |
-| Entity | Data model (maps to DB table) |
-| Field | Attribute inside entity |
-| Page | UI route (list, form, detail) |
-| Generated App | Runtime instance created from config |
-| Tenant | A single generated app instance |
-
-> 📌 Decision:
-> A **tenant = a generated app**, NOT a user.
-> This affects isolation, routing, and DB design.
+|---------|-------------|
+| Config | JSON file defining the entire application |
+| Entity | Data model (maps to a DB table) |
+| Field | Attribute inside an entity (text, number, date, select, boolean) |
+| Page | UI route (list, form, detail, dashboard) |
+| Runtime Engine | Core system that interprets config and builds the app |
+| Tenant | A generated application instance, isolated by app_id |
 
 ---
 
 ## How It Works (End-to-End)
 
-### Step 1 — Load Config
-
-```ts
-import fs from "fs";
-
-const rawConfig = JSON.parse(fs.readFileSync("./config/app.json", "utf-8"));
-````
-
----
-
-### Step 2 — Validate + Normalize
-
-```ts
-import { validateConfig } from "./core/validator";
-import { normalizeConfig } from "./core/normalizer";
-
-const result = validateConfig(rawConfig);
-
-if (!result.success) {
-  throw new Error(JSON.stringify(result.errors, null, 2));
-}
-
-const config = normalizeConfig(result.data);
+```text
+User prompt (natural language)
+   |
+LLM (Anthropic Claude) -> generates JSON config
+   |
+Validation (Zod schema + semantic checks)
+   |
+Normalization (defaults, sanitization)
+   |
+Runtime Engine boots:
+   ├── Frontend: React renders UI from config (component registry)
+   ├── Backend: Express creates API routes from entities
+   └── Database: PostgreSQL tables with JSONB data column
+   |
+Working application (forms, lists, CRUD, auth)
 ```
-
----
-
-### Step 3 — Boot Runtime Engine
-
-```ts
-import { bootApp } from "./core/runtime";
-
-await bootApp(config);
-```
-
----
-
-### Step 4 — Runtime Registers APIs
-
-```ts
-app.get(`/api/${entity}`, handler);
-```
-
----
-
-### Step 5 — Frontend Renders UI
-
-```tsx
-const Component = registry[field.type];
-return <Component {...field} />;
-```
-
----
-
-### Step 6 — User Interaction
-
-* User submits form
-* API validates input
-* Data stored in DB
-* Event emitted
-* UI updates
 
 ---
 
 ## Key Features
 
-### Dynamic UI Rendering
+### Three Qualifying Features
 
-Forms, tables, and pages are rendered using a component registry.
+1. **CSV Import System** — Upload CSV, map columns to entity fields via UI, validate per row, import with result reporting
+2. **Event-Based Notifications** — Entity lifecycle events (create, update, delete) trigger email notifications via Nodemailer, controlled by config
+3. **Multiple Login Methods** — Config-driven auth: `auth.methods` array controls which providers (email, Google OAuth) are active at runtime
 
-### Dynamic API Generation
+### Core Platform Capabilities
 
-CRUD endpoints are registered at runtime.
+- Dynamic UI rendering from JSON config (component registry pattern)
+- Dynamic REST API generation (no hardcoded routes)
+- Config-driven database schema (JSONB hybrid)
+- Hot config reload without redeploy (POST /config + frontend polling)
+- Strict fail-fast validation (Zod + semantic, no partial execution)
+- Multi-tenant data isolation (app_id + user_id scoping on all queries)
 
-### Config-Driven Database
+### Bonus Feature
 
-Schema is derived from config using PostgreSQL + JSONB hybrid.
-
-### Authentication
-
-Multi-method auth using NextAuth.js with strict tenant scoping.
-
-### Event System
-
-Triggers notifications and side effects on actions.
-
-### LLM Config Generation
-
-Natural language → JSON config using Anthropic API.
+- **LLM-Based Config Generation** — Natural language to validated JSON config via Anthropic Claude API, with schema injection and 3-attempt retry
 
 ---
 
 ## Architecture at a Glance
 
-```
-Raw Config
-   ↓
-Validator (Zod)
-   ↓
-Normalizer
-   ↓
-Runtime Engine
-   ↓
- ┌───────────────┬───────────────┬───────────────┐
- │ Frontend UI   │ API Generator │ DB Engine     │
- └───────────────┴───────────────┴───────────────┘
+```text
+┌──────────────────────────────────────────────────┐
+│                    Frontend                       │
+│  Next.js 14 + React + Tailwind CSS              │
+│  AppShell -> PageRouter -> PageRenderer          │
+│  Component Registry (text, number, select, ...)  │
+│  useRuntimeConfig() + useConfigPolling()         │
+└───────────────────────┬──────────────────────────┘
+                        │ HTTP
+┌───────────────────────┴──────────────────────────┐
+│                    Backend                        │
+│  Node.js + TypeScript + Express                  │
+│  Dynamic route registration per entity           │
+│  CRUD handlers with tenant scoping               │
+│  Config management (GET/POST /config)            │
+│  Event bus + Nodemailer                          │
+│  buildAuthProviders(config) + NextAuth.js        │
+└───────────────────────┬──────────────────────────┘
+                        │ SQL
+┌───────────────────────┴──────────────────────────┐
+│                   Database                        │
+│  PostgreSQL + JSONB hybrid                       │
+│  System tables: apps, users, app_users           │
+│  Entity tables: dynamic, one per config entity   │
+│  Tenant isolation: app_id + user_id on all rows  │
+└──────────────────────────────────────────────────┘
 ```
 
 ---
 
 ## Quick Start
 
-### 1. Clone
+### Prerequisites
+
+- Node.js 18+
+- PostgreSQL 15+
+- npm or yarn
+
+### Setup
 
 ```bash
+# Clone repository
 git clone https://github.com/your-username/configforge.git
 cd configforge
-```
 
----
-
-### 2. Install
-
-```bash
+# Install frontend dependencies
+cd frontend
 npm install
+cp .env.example .env.local
+
+# Install backend dependencies
+cd ../backend
+npm install
+cp .env.example .env
+
+# Set up database
+npx knex migrate:latest
 ```
 
----
+### Environment Variables
 
-### 3. Setup Environment
-
+**Frontend (.env.local):**
 ```env
-DATABASE_URL=postgresql://user:password@localhost:5432/configforge
-NEXTAUTH_SECRET=supersecret
-GOOGLE_CLIENT_ID=xxx
-GOOGLE_CLIENT_SECRET=xxx
-ANTHROPIC_API_KEY=xxx
+NEXT_PUBLIC_API_URL=http://localhost:4000
+NEXTAUTH_URL=http://localhost:3000
+NEXTAUTH_SECRET=<run: openssl rand -base64 32>
 ```
 
----
+**Backend (.env):**
+```env
+DATABASE_URL=postgres://user:password@localhost:5432/configforge
+NEXTAUTH_SECRET=<run: openssl rand -base64 32>
+GOOGLE_CLIENT_ID=your-google-client-id
+GOOGLE_CLIENT_SECRET=your-google-client-secret
+SMTP_HOST=smtp.mailtrap.io
+SMTP_PORT=587
+SMTP_USER=your-mailtrap-user
+SMTP_PASS=your-mailtrap-pass
+ANTHROPIC_API_KEY=your-anthropic-api-key
+```
 
-### 4. Run
+### Run
 
 ```bash
-npm run dev
-```
+# Terminal 1: Backend
+cd backend && npm run dev
 
----
-
-### 5. Open
-
-```
-http://localhost:3000
+# Terminal 2: Frontend
+cd frontend && npm run dev
 ```
 
 ---
@@ -232,146 +201,85 @@ http://localhost:3000
 {
   "version": "1.0",
   "app": { "name": "Bug Tracker" },
+  "auth": { "methods": ["email", "google"] },
   "entities": [
     {
       "name": "bug",
       "fields": [
         { "id": "title", "type": "text", "validation": { "required": true } },
-        { "id": "severity", "type": "select", "options": ["low","medium","high"] }
+        { "id": "severity", "type": "select", "options": ["low", "medium", "high"] },
+        { "id": "assignee", "type": "text" },
+        { "id": "resolved", "type": "boolean" }
       ]
     }
   ],
   "pages": [
     { "path": "/bugs", "type": "list", "entity": "bug" },
     { "path": "/bugs/new", "type": "form", "entity": "bug" }
-  ]
-}
-```
-
----
-
-## Failure Modes (Read This)
-
-### 1. Invalid Config
-
-**Cause:**
-
-* Missing required fields
-* Invalid schema
-
-**Behavior:**
-
-* System fails at startup
-* Returns structured validation errors
-
-```json
-{
-  "errors": [
-    {
-      "path": "entities[0].fields[1].type",
-      "message": "Invalid enum value",
-      "severity": "error"
+  ],
+  "features": {
+    "csv_import": true,
+    "notifications": {
+      "on_create": true,
+      "on_update": false
     }
-  ]
+  }
 }
 ```
 
 ---
 
-### 2. Partial Config Errors
+## Live Demo
 
-**Example:**
-Page references non-existent entity.
-
-**Behavior:**
-
-* Config rejected (fail-fast mode)
-
-> 📌 Decision:
-> ConfigForge uses **fail-fast validation**, NOT partial rendering.
->
-> **Why:**
->
-> * Prevents inconsistent runtime state
-> * Easier debugging
->
-> **Trade-off:**
->
-> * Less tolerant to incomplete configs
+- **Frontend**: [your-frontend-url.vercel.app]
+- **Backend**: [your-backend-url.railway.app]
+- **Health Check**: [your-backend-url.railway.app/health]
 
 ---
 
-### 3. Runtime Errors
+## Failure Modes
 
-**Cause:**
-
-* DB failure
-* API crash
-
-**Handling:**
-
-```ts
-try {
-  await db.insert(data);
-} catch (err) {
-  logger.error(err);
-  return res.status(500).json({
-    error: "DATABASE_ERROR",
-    message: err.message
-  });
-}
-```
-
----
-
-### 4. Hot Reload Conflicts
-
-If config changes during runtime:
-
-* Active requests complete
-* New config applied after
+| Failure | System Behavior |
+|---------|----------------|
+| Invalid config JSON | Rejected at validation step; app does not change state |
+| Unknown field type | Rendered as orange warning (UnknownField component); no crash |
+| API endpoint error | Returns structured JSON error with status code; UI shows inline error |
+| Missing entity | Page renderer shows "Entity not found" error page |
+| Database connection lost | Health check returns 500; API returns DB_ERROR |
+| LLM generation fails | Retried up to 3 times; falls back to manual config |
+| Breaking schema change | POST /config returns 409 with change details; config not applied |
 
 ---
 
 ## Documentation
 
-* `/docs/architecture.md`
-* `/docs/config-schema.md`
-* `/docs/backend.md`
-* `/docs/database.md`
-* `/docs/security.md`
+| Document | Topic |
+|----------|-------|
+| doc_02 | Architecture Overview |
+| doc_03 | Config Schema Reference |
+| doc_04 | Frontend System |
+| doc_05 | Backend API System |
+| doc_06 | Database System |
+| doc_07 | Authentication System |
+| doc_08 | Feature Systems (CSV, Notifications, Auth, LLM) |
+| doc_09 | Developer Guide |
+| doc_10 | Deployment Guide |
+| doc_11 | Security Specification |
+| doc_12 | Changelog and Roadmap |
+| doc_13 | System Limitations |
+| doc_14 | Pitch Guide |
+| doc_15 | Competitive Analysis |
+| doc_16 | Glossary |
 
 ---
 
 ## License
 
-MIT License © ConfigForge
-
-```
+MIT
 
 ---
 
-# ✅ What was fixed (important)
-
-This README now:
-- Defines **how system actually works**
-- Includes **real runnable code**
-- Explains **decisions + tradeoffs**
-- Specifies **failure behavior**
-- Clarifies **tenant model (CRITICAL FIX)**
-
----
-
-## 🚀 Next
-
-Send:
-👉 **DOCUMENT 2 — Architecture**
-
-Now we’ll fix:
-- partial validation
-- hot reload
-- tenant isolation (properly)
-- full runtime design
-
-And make it **senior-level solid**.
-```
+CHANGES APPLIED:
+- Guide section used: 11 (NEXTAUTH_SECRET fix, feature naming)
+- Contradictions resolved: NEXTAUTH_SECRET now shows `openssl rand -base64 32`; three qualifying features explicitly named (CSV Import, Notifications, Multiple Login Methods); LLM marked as bonus; multi-language references removed; version updated to 1.0; added Live Demo section with URL placeholders
+- Removed: Trailing "what was fixed" commentary; emoji from headers; `NEXTAUTH_SECRET=supersecret`; multi-language from features; wrapping code fences

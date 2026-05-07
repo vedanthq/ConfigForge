@@ -1,6 +1,6 @@
-# ⚠️ System Limitations & Design Decisions
+# System Limitations and Design Decisions
 
-## 🧠 Purpose
+## Purpose
 
 This document explains:
 - What the system deliberately does NOT do
@@ -9,7 +9,7 @@ This document explains:
 
 ---
 
-## ⚖️ Key Design Decisions
+## Key Design Decisions
 
 ### 1. Runtime Generation vs Code Generation
 
@@ -54,7 +54,7 @@ This document explains:
 
 ---
 
-## ⚠️ Known Limitations
+## Known Limitations
 
 ### 1. Complex Business Logic
 
@@ -85,7 +85,7 @@ Not suitable for:
 
 ---
 
-## 🚧 Future Improvements
+## Future Improvements
 
 - Caching layer for config
 - Static optimization (hybrid generation)
