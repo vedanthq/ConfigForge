@@ -17,8 +17,7 @@ export async function bootApp(app: Express): Promise<void> {
   logger.info('Starting boot sequence');
 
   if (!process.env.NEXTAUTH_SECRET || process.env.NEXTAUTH_SECRET.length < 32) {
-    logger.fatal('NEXTAUTH_SECRET must be at least 32 characters');
-    process.exit(1);
+    throw new Error('NEXTAUTH_SECRET must be at least 32 characters');
   }
 
   const raw = loadConfig();
