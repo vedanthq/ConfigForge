@@ -4,6 +4,8 @@ import React, { useState, useEffect } from "react";
 import { RuntimeEntity } from "@/types/config";
 import LoadingSkeleton from "@/components/common/LoadingSkeleton";
 import ErrorPage from "@/components/pages/ErrorPage";
+import { getApiConfig } from "@/lib/api";
+import { useApiToken } from "@/hooks/useApiToken";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000";
 
@@ -13,6 +15,7 @@ interface DetailPageProps {
 }
 
 export default function DetailPage({ entity, id }: DetailPageProps) {
+  const token = useApiToken();
   const [record, setRecord] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -25,10 +28,11 @@ export default function DetailPage({ entity, id }: DetailPageProps) {
     }
 
     const fetchRecord = async () => {
+      if (!token) return;
       setLoading(true);
       setError(null);
       try {
-        const res = await fetch(`${API_URL}/api/${entity.name}/${id}`);
+        const res = await fetch(`${API_URL}/api/${entity.name}/${id}`, getApiConfig(token));
         if (res.status === 404) {
           setError("NOT_FOUND");
           return;
@@ -43,7 +47,7 @@ export default function DetailPage({ entity, id }: DetailPageProps) {
       }
     };
     fetchRecord();
-  }, [entity.name, id]);
+  }, [entity.name, id, token]);
 
   if (loading) return <LoadingSkeleton rows={4} />;
 

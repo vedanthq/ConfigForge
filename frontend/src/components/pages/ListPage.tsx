@@ -4,6 +4,8 @@ import React, { useState, useEffect } from "react";
 import { RuntimeEntity } from "@/types/config";
 import LoadingSkeleton from "@/components/common/LoadingSkeleton";
 import CSVUploadFlow from "@/components/csv/CSVUploadFlow";
+import { getApiConfig } from "@/lib/api";
+import { useApiToken } from "@/hooks/useApiToken";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000";
 const PAGE_SIZE = 20;
@@ -13,6 +15,7 @@ interface ListPageProps {
 }
 
 export default function ListPage({ entity }: ListPageProps) {
+  const token = useApiToken();
   const [records, setRecords] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -21,11 +24,13 @@ export default function ListPage({ entity }: ListPageProps) {
 
   useEffect(() => {
     const fetchRecords = async () => {
+      if (!token) return;
       setLoading(true);
       setError(null);
       try {
         const res = await fetch(
-          `${API_URL}/api/${entity.name}?page=${page}&limit=${PAGE_SIZE}`
+          `${API_URL}/api/${entity.name}?page=${page}&limit=${PAGE_SIZE}`,
+          getApiConfig(token)
         );
         if (!res.ok) throw new Error(`HTTP ${res.status}`);
         const json = await res.json();
@@ -37,7 +42,7 @@ export default function ListPage({ entity }: ListPageProps) {
       }
     };
     fetchRecords();
-  }, [entity.name, page]);
+  }, [entity.name, page, token]);
 
   if (loading) return <LoadingSkeleton rows={5} />;
 

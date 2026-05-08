@@ -1,4 +1,5 @@
 import type { Knex } from 'knex';
+import bcrypt from 'bcryptjs';
 
 export async function seed(knex: Knex): Promise<void> {
   await knex('app_users').del();
@@ -14,10 +15,11 @@ export async function seed(knex: Knex): Promise<void> {
     })
     .returning(['id', 'subdomain']);
 
+  const passwordHash = await bcrypt.hash('demo1234', 12);
   const [user] = await knex('users')
     .insert({
       email: 'demo@configforge.dev',
-      password_hash: null,
+      password_hash: passwordHash,
       auth_provider: 'email',
     })
     .returning(['id', 'email']);

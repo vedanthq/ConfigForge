@@ -3,6 +3,8 @@
 import React, { useState } from "react";
 import { RuntimeEntity } from "@/types/config";
 import { renderField } from "@/lib/renderField";
+import { apiPost, getApiConfig } from "@/lib/api";
+import { useApiToken } from "@/hooks/useApiToken";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000";
 
@@ -11,6 +13,7 @@ interface FormPageProps {
 }
 
 export default function FormPage({ entity }: FormPageProps) {
+  const token = useApiToken();
   const [formData, setFormData] = useState<Record<string, any>>({});
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -22,6 +25,10 @@ export default function FormPage({ entity }: FormPageProps) {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!token) {
+      setError("Not authenticated. Please sign in.");
+      return;
+    }
     setSubmitting(true);
     setError(null);
     setSuccess(false);
@@ -29,7 +36,7 @@ export default function FormPage({ entity }: FormPageProps) {
     try {
       const res = await fetch(`${API_URL}/api/${entity.name}`, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        ...getApiConfig(token),
         body: JSON.stringify({ data: formData }),
       });
       if (!res.ok) {

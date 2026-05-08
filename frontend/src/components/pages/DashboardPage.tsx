@@ -3,6 +3,8 @@
 import React, { useState, useEffect } from "react";
 import { RuntimeConfig, RuntimeEntity } from "@/types/config";
 import LoadingSkeleton from "@/components/common/LoadingSkeleton";
+import { getApiConfig } from "@/lib/api";
+import { useApiToken } from "@/hooks/useApiToken";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000";
 
@@ -16,12 +18,14 @@ interface EntityData {
 }
 
 export default function DashboardPage({ config }: DashboardPageProps) {
+  const token = useApiToken();
   const [entityDataList, setEntityDataList] = useState<EntityData[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     const fetchAll = async () => {
+      if (!token) return;
       setLoading(true);
       setError(null);
       try {
@@ -29,7 +33,8 @@ export default function DashboardPage({ config }: DashboardPageProps) {
           config.entities.map(async (entity) => {
             try {
               const res = await fetch(
-                `${API_URL}/api/${entity.name}?limit=5`
+                `${API_URL}/api/${entity.name}?limit=5`,
+                getApiConfig(token)
               );
               if (!res.ok) return { entity, records: [] };
               const json = await res.json();
@@ -48,7 +53,7 @@ export default function DashboardPage({ config }: DashboardPageProps) {
       }
     };
     fetchAll();
-  }, [config.entities]);
+  }, [config.entities, token]);
 
   if (loading) return <LoadingSkeleton rows={4} />;
 
