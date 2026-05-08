@@ -35,16 +35,15 @@ app.use('/api', (req, _res, next) => {
   next();
 });
 
+// Liveness probe — always returns 200 so Railway never kills the container
 app.get('/health', async (_req, res) => {
   const checks: Record<string, any> = {};
-  let healthy = true;
 
   try {
     await db.raw('SELECT 1');
     checks.database = 'connected';
   } catch (err) {
     checks.database = 'disconnected';
-    healthy = false;
   }
 
   const redisStatus = getRedisStatus();
@@ -54,11 +53,32 @@ app.get('/health', async (_req, res) => {
   checks.app = runtimeState.config?.app?.name || null;
   checks.entities = runtimeState.config?.entities?.length || 0;
   checks.uptime = process.uptime();
+  checks.ready = runtimeState.config !== null && checks.database === 'connected';
 
-  if (!healthy) {
-    res.status(503).json({ status: 'unhealthy', ...checks });
+  res.json({ status: checks.ready ? 'healthy' : 'starting', ...checks });
+});
+
+// Readiness probe — returns 503 when the app is not fully ready
+app.get('/health/ready', async (_req, res) => {
+  const checks: Record<string, any> = {};
+
+  try {
+    await db.raw('SELECT 1');
+    checks.database = 'connected';
+  } catch (err) {
+    checks.database = 'disconnected';
+  }
+
+  checks.runtime = runtimeState.config ? 'loaded' : 'not_loaded';
+  checks.version = runtimeState.version;
+  checks.uptime = process.uptime();
+
+  const ready = runtimeState.config !== null && checks.database === 'connected';
+
+  if (!ready) {
+    res.status(503).json({ status: 'not_ready', ready: false, ...checks });
   } else {
-    res.json({ status: 'healthy', ...checks });
+    res.json({ status: 'ready', ready: true, ...checks });
   }
 });
 
@@ -70,15 +90,15 @@ app.use('/api', resolveTenant, requireAuth, checkAppMembership);
 
 registerCsvRoutes(app);
 
-(async () => {
-  try {
-    await bootApp(app);
-    app.listen(PORT, () => {
-      logger.info({ port: PORT }, 'ConfigForge backend running on port');
-      logStartupStatus(logger);
-    });
-  } catch (err) {
-    logger.error({ err }, 'Boot sequence failed');
-    process.exit(1);
-  }
-})();
+// Start HTTP server immediately so Railway health checks succeed
+app.listen(PORT, () => {
+  logger.info({ port: PORT }, 'ConfigForge backend HTTP server listening');
+  logStartupStatus(logger);
+});
+
+// Boot the app (DB sync, config load, dynamic routes) in the background
+bootApp(app).then(() => {
+  logger.info('Boot sequence completed successfully');
+}).catch((err) => {
+  logger.error({ err }, 'Boot sequence failed — app is running in degraded mode');
+});
