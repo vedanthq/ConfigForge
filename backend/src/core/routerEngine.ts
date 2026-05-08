@@ -1,7 +1,7 @@
 import { Router } from 'express';
 import type { Express, Router as RouterType } from 'express';
 import type { RuntimeConfig } from './types';
-import { listHandler, createHandler, updateHandler, deleteHandler } from '../api/handlers';
+import { listHandler, createHandler, getHandler, updateHandler, deleteHandler } from '../api/handlers';
 import { requireAuth } from '../middleware/auth';
 import { logger } from '../lib/logger';
 
@@ -26,6 +26,7 @@ export function createRouterEngine(app: Express): RouterEngine {
       for (const entity of config.entities) {
         const name = entity.name;
         newRouter.get(`/${name}`, listHandler(name));
+        newRouter.get(`/${name}/:id`, getHandler(name));
         newRouter.post(`/${name}`, createHandler(name));
         newRouter.put(`/${name}/:id`, updateHandler(name));
         newRouter.delete(`/${name}/:id`, deleteHandler(name));

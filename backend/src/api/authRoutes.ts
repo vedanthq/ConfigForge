@@ -1,7 +1,17 @@
 import type { Express, Request, Response } from "express";
 import bcrypt from "bcryptjs";
+import { SignJWT } from "jose";
 import { db } from "../db/connection";
 import { logger } from "../lib/logger";
+
+async function generateToken(userId: string, email: string): Promise<string> {
+  const secret = new TextEncoder().encode(process.env.NEXTAUTH_SECRET!);
+  return new SignJWT({ user_id: userId, email })
+    .setProtectedHeader({ alg: "HS256" })
+    .setIssuedAt()
+    .setExpirationTime("24h")
+    .sign(secret);
+}
 
 export function registerAuthRoutes(app: Express): void {
   app.post("/auth/register", async (req: Request, res: Response): Promise<void> => {
@@ -68,7 +78,8 @@ export function registerAuthRoutes(app: Express): void {
         return;
       }
 
-      res.json({ success: true, user: { id: user.id, email: user.email } });
+      const token = await generateToken(user.id, user.email);
+      res.json({ success: true, user: { id: user.id, email: user.email }, token });
     } catch (err) {
       logger.error({ err }, "Login failed");
       res.status(500).json({ error: "SERVER_ERROR", message: "Login failed" });

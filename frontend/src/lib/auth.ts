@@ -31,7 +31,7 @@ async function fetchGoogleUser(email: string): Promise<{ id: string; email: stri
   }
 }
 
-async function verifyCredentials(email: string, password: string): Promise<{ id: string; email: string } | null> {
+async function verifyCredentials(email: string, password: string): Promise<{ id: string; email: string; token: string } | null> {
   try {
     const res = await fetch(`${API_URL}/auth/login`, {
       method: "POST",
@@ -41,6 +41,7 @@ async function verifyCredentials(email: string, password: string): Promise<{ id:
     });
     if (!res.ok) return null;
     const data = await res.json();
+    if (data.token) return { id: data.user.id, email: data.user.email, token: data.token };
     return data.user || null;
   } catch {
     return null;
@@ -63,7 +64,7 @@ export async function buildAuthOptions(): Promise<NextAuthOptions> {
           if (!credentials?.email || !credentials?.password) return null;
           const user = await verifyCredentials(credentials.email, credentials.password);
           if (!user) return null;
-          return { id: user.id, email: user.email };
+          return { id: user.id, email: user.email, token: (user as any).token || "" };
         },
       })
     );
@@ -96,6 +97,7 @@ export async function buildAuthOptions(): Promise<NextAuthOptions> {
           } else if (account.provider === "credentials") {
             token.user_id = user.id as string;
             token.email = user.email as string;
+            token.accessToken = (user as any).token as string;
           }
         }
         return token;
@@ -108,6 +110,7 @@ export async function buildAuthOptions(): Promise<NextAuthOptions> {
             id: token.user_id,
             email: token.email,
           },
+          accessToken: token.accessToken as string,
         };
       },
     },

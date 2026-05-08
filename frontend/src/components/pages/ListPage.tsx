@@ -28,8 +28,8 @@ export default function ListPage({ entity }: ListPageProps) {
           `${API_URL}/api/${entity.name}?page=${page}&limit=${PAGE_SIZE}`
         );
         if (!res.ok) throw new Error(`HTTP ${res.status}`);
-        const data = await res.json();
-        setRecords(Array.isArray(data) ? data : data.records || []);
+        const json = await res.json();
+        setRecords(json.data || []);
       } catch (err: any) {
         setError(err.message || "Failed to fetch records");
       } finally {

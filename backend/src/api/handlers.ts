@@ -7,10 +7,21 @@ import { logger } from '../lib/logger';
 export function listHandler(entityName: string) {
   return async (req: Request, res: Response): Promise<void> => {
     try {
+      const page = Math.max(1, parseInt(req.query.page as string) || 1);
+      const limit = Math.min(100, Math.max(1, parseInt(req.query.limit as string) || 20));
+      const offset = (page - 1) * limit;
+
+      const [{ count }] = await db(entityName)
+        .where({ app_id: req.app.id, user_id: req.user.id })
+        .count();
+
       const rows = await db(entityName)
         .where({ app_id: req.app.id, user_id: req.user.id })
-        .orderBy('created_at', 'desc');
-      res.json({ success: true, data: rows });
+        .orderBy('created_at', 'desc')
+        .limit(limit)
+        .offset(offset);
+
+      res.json({ success: true, data: rows, total: parseInt(count as string), page, limit });
     } catch (err) {
       logger.error({ err, entity: entityName }, 'Failed to list entities');
       res.status(500).json({ error: 'DB_ERROR', message: 'Failed to list entities' });
@@ -101,6 +112,25 @@ export function updateHandler(entityName: string) {
     } catch (err) {
       logger.error({ err, entity: entityName }, 'Failed to update entity');
       res.status(500).json({ error: 'DB_ERROR', message: 'Failed to update entity' });
+    }
+  };
+}
+
+export function getHandler(entityName: string) {
+  return async (req: Request, res: Response): Promise<void> => {
+    try {
+      const { id } = req.params;
+      const row = await db(entityName)
+        .where({ id, app_id: req.app.id, user_id: req.user.id })
+        .first();
+      if (!row) {
+        res.status(404).json({ error: 'NOT_FOUND', message: `${entityName} with id '${id}' not found` });
+        return;
+      }
+      res.json({ success: true, data: row });
+    } catch (err) {
+      logger.error({ err, entity: entityName }, 'Failed to get entity');
+      res.status(500).json({ error: 'DB_ERROR', message: 'Failed to get entity' });
     }
   };
 }

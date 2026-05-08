@@ -1,6 +1,7 @@
 "use client"
 
-import React, { useState, useEffect, useMemo } from "react";
+import React, { useMemo } from "react";
+import { usePathname } from "next/navigation";
 import { RuntimeConfig } from "@/types/config";
 import PageRenderer from "@/components/pages/PageRenderer";
 import ErrorPage from "@/components/pages/ErrorPage";
@@ -10,11 +11,7 @@ interface PageRouterProps {
 }
 
 export default function PageRouter({ config }: PageRouterProps) {
-  const [pathname, setPathname] = useState("");
-
-  useEffect(() => {
-    setPathname(window.location.pathname);
-  }, []);
+  const pathname = usePathname();
 
   const result = useMemo(() => {
     if (!pathname) return { page: null, params: {} as Record<string, string> };

@@ -3,7 +3,7 @@ import type { Config, ValidationError, ValidationResult } from "./types";
 import { logger } from "../lib/logger";
 
 const nameRegex = /^[a-zA-Z_][a-zA-Z0-9_]*$/;
-const pathRegex = /^\/[a-zA-Z0-9\-\/]*$/;
+const pathRegex = /^\/[a-zA-Z0-9\-\/\:]*$/;
 
 export const fieldSchema = z.object({
   id: z.string().regex(nameRegex),

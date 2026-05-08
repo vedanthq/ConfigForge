@@ -32,8 +32,8 @@ export default function DashboardPage({ config }: DashboardPageProps) {
                 `${API_URL}/api/${entity.name}?limit=5`
               );
               if (!res.ok) return { entity, records: [] };
-              const data = await res.json();
-              const records = Array.isArray(data) ? data : data.records || [];
+              const json = await res.json();
+              const records = json.data || [];
               return { entity, records };
             } catch {
               return { entity, records: [] };
