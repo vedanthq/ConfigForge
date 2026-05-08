@@ -1,0 +1,98 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "type": "object",
+  "properties": {
+    "version": { "type": "string", "pattern": "^[0-9]+\\.[0-9]+$" },
+    "app": {
+      "type": "object",
+      "properties": {
+        "name": { "type": "string", "minLength": 1, "maxLength": 120 }
+      },
+      "required": ["name"],
+      "additionalProperties": false
+    },
+    "auth": {
+      "type": "object",
+      "properties": {
+        "methods": {
+          "type": "array",
+          "items": { "type": "string", "enum": ["email", "google"] },
+          "minItems": 1
+        }
+      },
+      "default": { "methods": ["email"] },
+      "additionalProperties": false
+    },
+    "entities": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "name": { "type": "string", "pattern": "^[a-zA-Z_][a-zA-Z0-9_]*$" },
+          "fields": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "id": { "type": "string", "pattern": "^[a-zA-Z_][a-zA-Z0-9_]*$" },
+                "type": { "type": "string", "enum": ["text", "number", "date", "select", "boolean"] },
+                "label": { "type": "string", "maxLength": 120 },
+                "options": { "type": "array", "items": { "type": "string" } },
+                "validation": {
+                  "type": "object",
+                  "properties": {
+                    "required": { "type": "boolean", "default": false },
+                    "maxLength": { "type": "integer", "minimum": 1 }
+                  },
+                  "additionalProperties": false
+                }
+              },
+              "required": ["id", "type"],
+              "additionalProperties": false
+            },
+            "minItems": 1
+          }
+        },
+        "required": ["name", "fields"],
+        "additionalProperties": false
+      },
+      "minItems": 1
+    },
+    "pages": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "path": { "type": "string", "pattern": "^\\/[a-zA-Z0-9\\-\\/]*$" },
+          "type": { "type": "string", "enum": ["list", "form", "detail", "dashboard"] },
+          "entity": { "type": "string", "pattern": "^[a-zA-Z_][a-zA-Z0-9_]*$" }
+        },
+        "required": ["path", "type", "entity"],
+        "additionalProperties": false
+      },
+      "minItems": 1
+    },
+    "features": {
+      "type": "object",
+      "properties": {
+        "csv_import": { "type": "boolean" },
+        "notifications": {
+          "type": "object",
+          "properties": {
+            "on_create": { "type": "boolean" },
+            "on_update": { "type": "boolean" },
+            "on_delete": { "type": "boolean" }
+          },
+          "additionalProperties": false
+        },
+        "notification_recipients": {
+          "type": "array",
+          "items": { "type": "string", "format": "email" }
+        }
+      },
+      "required": ["csv_import", "notifications"],
+      "additionalProperties": false
+    }
+  },
+  "required": ["version", "app", "entities", "pages", "features"]
+}
