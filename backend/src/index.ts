@@ -5,6 +5,7 @@ import { createLogger } from './lib/logger';
 import { db } from './db/connection';
 import { bootApp, runtimeState } from './core/runtime';
 import { registerSecurityMiddleware, logStartupStatus } from './middleware/security';
+import { getRedisStatus } from './services/cacheService';
 import { registerConfigRoutes } from './api/configRoutes';
 import { registerAuthRoutes } from './api/authRoutes';
 import { registerCsvRoutes } from './api/csvRoutes';
@@ -35,12 +36,29 @@ app.use('/api', (req, _res, next) => {
 });
 
 app.get('/health', async (_req, res) => {
+  const checks: Record<string, any> = {};
+  let healthy = true;
+
   try {
     await db.raw('SELECT 1');
-    res.json({ status: 'ok', db: 'connected' });
+    checks.database = 'connected';
   } catch (err) {
-    logger.error({ err }, 'health check failed');
-    res.status(500).json({ status: 'fail', db: 'disconnected' });
+    checks.database = 'disconnected';
+    healthy = false;
+  }
+
+  const redisStatus = getRedisStatus();
+  checks.redis = redisStatus === 'connected' ? 'connected' : redisStatus;
+  checks.runtime = runtimeState.config ? 'loaded' : 'not_loaded';
+  checks.version = runtimeState.version;
+  checks.app = runtimeState.config?.app?.name || null;
+  checks.entities = runtimeState.config?.entities?.length || 0;
+  checks.uptime = process.uptime();
+
+  if (!healthy) {
+    res.status(503).json({ status: 'unhealthy', ...checks });
+  } else {
+    res.json({ status: 'healthy', ...checks });
   }
 });
 
