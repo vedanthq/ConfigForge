@@ -3,6 +3,9 @@ import type { Entity, Config } from "../core/types";
 import { db } from "./connection";
 import { logger } from "../lib/logger";
 
+const MAX_SYNC_RETRIES = 10;
+const BASE_RETRY_DELAY_MS = 2000;
+
 export function buildZodSchema(entity: Entity): z.ZodObject<any> {
   const shape: Record<string, z.ZodTypeAny> = {};
 
@@ -71,10 +74,34 @@ export async function ensureEntityTable(entity: Entity): Promise<void> {
 }
 
 export async function syncDatabase(config: Config): Promise<void> {
-  for (const entity of config.entities) {
-    await ensureEntityTable(entity);
+  let lastError: Error | null = null;
+
+  for (let attempt = 1; attempt <= MAX_SYNC_RETRIES; attempt++) {
+    try {
+      for (const entity of config.entities) {
+        await ensureEntityTable(entity);
+      }
+      logger.info({ count: config.entities.length, attempt }, 'Database sync completed');
+      return; // success
+    } catch (err: any) {
+      lastError = err;
+      if (attempt < MAX_SYNC_RETRIES) {
+        const delay = attempt * BASE_RETRY_DELAY_MS;
+        logger.warn(
+          { err: err.message, attempt, maxRetries: MAX_SYNC_RETRIES, delayMs: delay },
+          'Database sync attempt failed, retrying',
+        );
+        await new Promise((resolve) => setTimeout(resolve, delay));
+      }
+    }
   }
-  logger.info({ count: config.entities.length }, 'Database sync completed');
+
+  // All retries exhausted
+  logger.error(
+    { err: lastError?.message, attempts: MAX_SYNC_RETRIES },
+    'Database sync failed after all retries',
+  );
+  throw lastError || new Error('Database sync failed after all retries');
 }
 
 export async function saveConfigSnapshot(appId: string, config: Config, version: number): Promise<void> {
