@@ -1,0 +1,87 @@
+{
+  "version": "1.0",
+  "app": {
+    "name": "Bug Tracker"
+  },
+  "auth": {
+    "methods": ["email", "google"]
+  },
+  "entities": [
+    {
+      "name": "bug",
+      "fields": [
+        {
+          "id": "title",
+          "type": "text",
+          "label": "Bug Title",
+          "validation": {
+            "required": true,
+            "maxLength": 200
+          }
+        },
+        {
+          "id": "description",
+          "type": "text",
+          "label": "Description",
+          "validation": {
+            "required": false,
+            "maxLength": 2000
+          }
+        },
+        {
+          "id": "severity",
+          "type": "select",
+          "label": "Severity",
+          "options": ["low", "medium", "high", "critical"]
+        },
+        {
+          "id": "assignee",
+          "type": "text",
+          "label": "Assignee",
+          "validation": {
+            "required": false
+          }
+        },
+        {
+          "id": "resolved",
+          "type": "boolean",
+          "label": "Resolved",
+          "validation": {
+            "required": true
+          }
+        }
+      ]
+    }
+  ],
+  "pages": [
+    {
+      "path": "/bugs",
+      "type": "list",
+      "entity": "bug"
+    },
+    {
+      "path": "/bugs/new",
+      "type": "form",
+      "entity": "bug"
+    },
+    {
+      "path": "/bugs/:id",
+      "type": "detail",
+      "entity": "bug"
+    },
+    {
+      "path": "/dashboard",
+      "type": "dashboard",
+      "entity": "bug"
+    }
+  ],
+  "features": {
+    "csv_import": true,
+    "notifications": {
+      "on_create": true,
+      "on_update": false,
+      "on_delete": false
+    },
+    "notification_recipients": ["admin@example.com"]
+  }
+}
