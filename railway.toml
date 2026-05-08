@@ -4,9 +4,9 @@ dockerfile_path = "Dockerfile"
 
 [deploy]
 restartPolicyType = "ON_FAILURE"
-restartPolicyMaxRetries = 3
+restartPolicyMaxRetries = 10
 healthcheckPath = "/health"
-healthcheckTimeout = 5
+healthcheckTimeout = 30
 
 [[service]]
 name = "backend"
