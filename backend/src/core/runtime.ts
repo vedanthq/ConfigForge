@@ -1,4 +1,5 @@
-import { execSync } from 'child_process';
+import { exec } from 'child_process';
+import { promisify } from 'util';
 import type { Express } from 'express';
 import type { Config, RuntimeConfig } from './types';
 import { loadConfig } from './configLoader';
@@ -8,6 +9,8 @@ import { syncDatabase } from '../db/schemaBuilder';
 import { registerDynamicRoutes } from '../api/routes';
 import { registerInitialNotifications } from './reloadEngine';
 import { logger } from '../lib/logger';
+
+const asyncExec = promisify(exec);
 
 export const runtimeState: { config: RuntimeConfig | null; version: number } = {
   config: null,
@@ -53,15 +56,15 @@ export async function bootApp(app: Express): Promise<void> {
 
 async function runPendingMigrations(): Promise<void> {
   try {
-    execSync(
+    await asyncExec(
       './node_modules/.bin/tsx ./node_modules/knex/bin/cli.js migrate:latest --knexfile ./knexfile.ts',
-      { stdio: 'pipe', timeout: 30000 },
+      { timeout: 30000 },
     );
     logger.info('Knex migrations completed');
 
-    execSync(
+    await asyncExec(
       './node_modules/.bin/tsx ./node_modules/knex/bin/cli.js seed:run --knexfile ./knexfile.ts',
-      { stdio: 'pipe', timeout: 30000 },
+      { timeout: 30000 },
     );
     logger.info('Knex seeds completed');
   } catch (err: any) {

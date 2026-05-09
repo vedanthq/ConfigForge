@@ -2,5 +2,23 @@
   "framework": "nextjs",
   "buildCommand": "npm run build",
   "outputDirectory": ".next",
-  "installCommand": "npm install"
+  "installCommand": "npm install",
+  "rewrites": [
+    {
+      "source": "/api/(.*)",
+      "destination": "https://configforge-backend.railway.app/api/$1"
+    },
+    {
+      "source": "/auth/(.*)",
+      "destination": "https://configforge-backend.railway.app/auth/$1"
+    },
+    {
+      "source": "/config/(.*)",
+      "destination": "https://configforge-backend.railway.app/config/$1"
+    },
+    {
+      "source": "/health",
+      "destination": "https://configforge-backend.railway.app/health"
+    }
+  ]
 }

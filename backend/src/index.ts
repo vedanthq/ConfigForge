@@ -86,6 +86,19 @@ registerConfigRoutes(app);
 registerAuthRoutes(app);
 registerLlmRoutes(app);
 
+// Metrics endpoint — runtime observability data
+app.get('/metrics', (_req, res) => {
+  res.json({
+    uptime: process.uptime(),
+    config_version: runtimeState.version,
+    config_entities: runtimeState.config?.entities?.length || 0,
+    config_pages: runtimeState.config?.pages?.length || 0,
+    memory: process.memoryUsage(),
+    cpu: process.cpuUsage(),
+    timestamp: new Date().toISOString(),
+  });
+});
+
 app.use('/api', resolveTenant, requireAuth, checkAppMembership);
 
 registerCsvRoutes(app);
