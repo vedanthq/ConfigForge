@@ -5,10 +5,10 @@ declare module 'express-serve-static-core' {
     user: { id: string; email: string };
     config: RuntimeConfig;
     requestId: string;
+    tenantAppId: string;
   }
 
   interface Application<ResBody = any, Locals extends Record<string, any> = Record<string, any>> {
-    id: string;
     subdomain?: string;
   }
 }

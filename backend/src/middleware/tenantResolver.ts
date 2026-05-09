@@ -33,7 +33,7 @@ export async function resolveTenant(req: Request, res: Response, next: NextFunct
       return;
     }
 
-    req.app.id = app.id;
+    (req as any).tenantAppId = app.id;
     (req as any).logger?.info({ appId: app.id, strategy }, "Tenant resolved");
 
     next();

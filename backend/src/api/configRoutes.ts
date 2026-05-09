@@ -40,7 +40,7 @@ export function registerConfigRoutes(app: Express): void {
         return;
       }
 
-      const version = await reloadConfig(app, newConfig, (req as any).app?.id);
+      const version = await reloadConfig(app, newConfig, (req as any).tenantAppId);
 
       res.json({ success: true, version });
     } catch (err: any) {
@@ -51,7 +51,7 @@ export function registerConfigRoutes(app: Express): void {
 
   app.post('/config/rollback', requireAuth, async (req: Request, res: Response) => {
     try {
-      const appId = (req as any).app?.id;
+      const appId = (req as any).tenantAppId;
       if (!appId) {
         res.status(400).json({ error: 'APP_REQUIRED', message: 'App ID required for rollback' });
         return;

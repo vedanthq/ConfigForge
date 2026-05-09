@@ -3,7 +3,7 @@ import { db } from "../db/connection";
 
 export async function checkAppMembership(req: Request, res: Response, next: NextFunction): Promise<void> {
   try {
-    const appId = req.app.id;
+    const appId = req.tenantAppId;
     const userId = req.user.id;
 
     if (!appId) {

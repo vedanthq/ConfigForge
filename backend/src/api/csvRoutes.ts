@@ -125,7 +125,7 @@ export function registerCsvRoutes(app: Express): void {
         const result = schema.safeParse(remapped);
         if (result.success) {
           validRows.push({
-            app_id: req.app.id,
+            app_id: req.tenantAppId,
             user_id: req.user.id,
             data: result.data,
           });

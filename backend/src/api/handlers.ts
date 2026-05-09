@@ -12,11 +12,11 @@ export function listHandler(entityName: string) {
       const offset = (page - 1) * limit;
 
       const [{ count }] = await db(entityName)
-        .where({ app_id: req.app.id, user_id: req.user.id })
+        .where({ app_id: req.tenantAppId, user_id: req.user.id })
         .count();
 
       const rows = await db(entityName)
-        .where({ app_id: req.app.id, user_id: req.user.id })
+        .where({ app_id: req.tenantAppId, user_id: req.user.id })
         .orderBy('created_at', 'desc')
         .limit(limit)
         .offset(offset);
@@ -47,7 +47,7 @@ export function createHandler(entityName: string) {
 
       const [row] = await db(entityName)
         .insert({
-          app_id: req.app.id,
+          app_id: req.tenantAppId,
           user_id: req.user.id,
           data: result.data,
         })
@@ -86,7 +86,7 @@ export function updateHandler(entityName: string) {
       }
 
       const existing = await db(entityName)
-        .where({ id, app_id: req.app.id, user_id: req.user.id })
+        .where({ id, app_id: req.tenantAppId, user_id: req.user.id })
         .first();
 
       if (!existing) {
@@ -97,7 +97,7 @@ export function updateHandler(entityName: string) {
       const mergedData = { ...existing.data, ...result.data };
 
       const [updated] = await db(entityName)
-        .where({ id, app_id: req.app.id, user_id: req.user.id })
+        .where({ id, app_id: req.tenantAppId, user_id: req.user.id })
         .update({ data: mergedData, updated_at: db.fn.now() })
         .returning('*');
 
@@ -121,7 +121,7 @@ export function getHandler(entityName: string) {
     try {
       const { id } = req.params;
       const row = await db(entityName)
-        .where({ id, app_id: req.app.id, user_id: req.user.id })
+        .where({ id, app_id: req.tenantAppId, user_id: req.user.id })
         .first();
       if (!row) {
         res.status(404).json({ error: 'NOT_FOUND', message: `${entityName} with id '${id}' not found` });
@@ -141,7 +141,7 @@ export function deleteHandler(entityName: string) {
       const { id } = req.params;
 
       const existing = await db(entityName)
-        .where({ id, app_id: req.app.id, user_id: req.user.id })
+        .where({ id, app_id: req.tenantAppId, user_id: req.user.id })
         .first();
 
       if (!existing) {
@@ -150,7 +150,7 @@ export function deleteHandler(entityName: string) {
       }
 
       await db(entityName)
-        .where({ id, app_id: req.app.id, user_id: req.user.id })
+        .where({ id, app_id: req.tenantAppId, user_id: req.user.id })
         .del();
 
       eventBus.emit('entity.delete', {
