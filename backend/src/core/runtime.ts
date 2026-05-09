@@ -1,3 +1,4 @@
+import { execSync } from 'child_process';
 import type { Express } from 'express';
 import type { Config, RuntimeConfig } from './types';
 import { loadConfig } from './configLoader';
@@ -36,6 +37,9 @@ export async function bootApp(app: Express): Promise<void> {
   await syncDatabase(normalized);
   logger.info('Database synced');
 
+  // Run pending Knex migrations and seed now that DB is confirmed available
+  await runPendingMigrations();
+
   registerDynamicRoutes(app, normalized);
   logger.info('Dynamic routes registered');
 
@@ -45,6 +49,24 @@ export async function bootApp(app: Express): Promise<void> {
   registerInitialNotifications();
 
   logger.info({ version: 1, app: normalized.app.name, entities: normalized.entities.length }, 'Boot sequence completed');
+}
+
+async function runPendingMigrations(): Promise<void> {
+  try {
+    execSync(
+      './node_modules/.bin/tsx ./node_modules/knex/bin/cli.js migrate:latest --knexfile ./knexfile.ts',
+      { stdio: 'pipe', timeout: 30000 },
+    );
+    logger.info('Knex migrations completed');
+
+    execSync(
+      './node_modules/.bin/tsx ./node_modules/knex/bin/cli.js seed:run --knexfile ./knexfile.ts',
+      { stdio: 'pipe', timeout: 30000 },
+    );
+    logger.info('Knex seeds completed');
+  } catch (err: any) {
+    logger.warn({ err: err?.message }, 'Post-boot migrations/seeds failed — app running in degraded mode');
+  }
 }
 
 export { reloadConfig } from './reloadEngine';
