@@ -13,7 +13,9 @@ COPY --from=build /app/node_modules ./node_modules
 COPY --from=build /app/package.json ./
 COPY --from=build /app/knexfile.ts ./
 COPY --from=build /app/migrations ./migrations
+COPY --from=build /app/seeds ./seeds
 COPY --from=build /app/config ./config
+COPY --from=build /app/scripts ./scripts
 EXPOSE 4000
 USER appuser
-CMD ["node", "dist/index.js"]
+CMD ["sh", "./scripts/startup.sh"]
