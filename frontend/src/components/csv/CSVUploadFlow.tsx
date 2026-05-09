@@ -4,8 +4,7 @@ import React, { useState, useRef } from "react";
 import { RuntimeField } from "@/types/config";
 import CSVMapperUI from "./CSVMapperUI";
 import ImportResult from "./ImportResult";
-
-const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000";
+import { API_URL } from "@/lib/config";
 
 type FlowState = "upload" | "mapping" | "result";
 

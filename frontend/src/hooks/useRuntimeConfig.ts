@@ -2,8 +2,7 @@
 
 import { useState, useEffect, useCallback } from "react";
 import { RuntimeConfig } from "@/types/config";
-
-const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000";
+import { API_URL } from "@/lib/config";
 
 export function useRuntimeConfig() {
   const [config, setConfig] = useState<RuntimeConfig | null>(null);

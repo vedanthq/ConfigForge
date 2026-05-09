@@ -108,7 +108,8 @@ export function registerAuthRoutes(app: Express): void {
           .returning("*");
       }
 
-      res.json({ success: true, user: { id: user.id, email: user.email } });
+      const token = await generateToken(user.id, user.email);
+      res.json({ success: true, user: { id: user.id, email: user.email }, token });
     } catch (err) {
       logger.error({ err }, "Google registration failed");
       res.status(500).json({ error: "SERVER_ERROR", message: "Google registration failed" });

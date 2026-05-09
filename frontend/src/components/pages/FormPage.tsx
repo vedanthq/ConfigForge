@@ -5,8 +5,7 @@ import { RuntimeEntity } from "@/types/config";
 import { renderField } from "@/lib/renderField";
 import { apiPost, getApiConfig } from "@/lib/api";
 import { useApiToken } from "@/hooks/useApiToken";
-
-const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000";
+import { API_URL } from "@/lib/config";
 
 interface FormPageProps {
   entity: RuntimeEntity;

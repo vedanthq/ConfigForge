@@ -6,8 +6,7 @@ import LoadingSkeleton from "@/components/common/LoadingSkeleton";
 import CSVUploadFlow from "@/components/csv/CSVUploadFlow";
 import { getApiConfig } from "@/lib/api";
 import { useApiToken } from "@/hooks/useApiToken";
-
-const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000";
+import { API_URL } from "@/lib/config";
 const PAGE_SIZE = 20;
 
 interface ListPageProps {
@@ -24,7 +23,10 @@ export default function ListPage({ entity }: ListPageProps) {
 
   useEffect(() => {
     const fetchRecords = async () => {
-      if (!token) return;
+      if (!token) {
+        setLoading(false);
+        return;
+      }
       setLoading(true);
       setError(null);
       try {

@@ -1,10 +1,13 @@
 "use client"
 
 import { useState } from "react";
-
-const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000";
+import { API_URL } from "@/lib/config";
+import { useApiToken } from "@/hooks/useApiToken";
+import { useToast } from "@/components/ui/Toast";
 
 export default function GeneratorUI() {
+  const token = useApiToken();
+  const { showToast } = useToast();
   const [open, setOpen] = useState(false);
   const [prompt, setPrompt] = useState("");
   const [loading, setLoading] = useState(false);
@@ -43,13 +46,24 @@ export default function GeneratorUI() {
 
   const handleApply = async () => {
     if (!generatedConfig) return;
+    if (!token) {
+      setError("Please sign in to apply configurations");
+      return;
+    }
     setApplying(true);
     try {
       const res = await fetch(`${API_URL}/config`, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${token}`,
+        },
         body: JSON.stringify(generatedConfig),
       });
+      if (res.status === 401) {
+        setError("Session expired. Please sign in again.");
+        return;
+      }
       const data = await res.json();
       if (!res.ok) {
         setError(data.error || "Failed to apply config");
@@ -58,6 +72,7 @@ export default function GeneratorUI() {
       setOpen(false);
       setPrompt("");
       setGeneratedConfig(null);
+      showToast(`Configuration applied! Version ${data.version || "updated"}`, "success");
       window.location.reload();
     } catch (err: any) {
       setError(err.message || "Failed to apply config");

@@ -1,8 +1,7 @@
 import type { NextAuthOptions } from "next-auth";
 import CredentialsProvider from "next-auth/providers/credentials";
 import GoogleProvider from "next-auth/providers/google";
-
-const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000";
+import { API_URL } from "@/lib/config";
 
 async function fetchConfigMethods(): Promise<("email" | "google")[]> {
   try {
@@ -15,7 +14,7 @@ async function fetchConfigMethods(): Promise<("email" | "google")[]> {
   }
 }
 
-async function fetchGoogleUser(email: string): Promise<{ id: string; email: string } | null> {
+async function fetchGoogleUser(email: string): Promise<{ id: string; email: string; token?: string } | null> {
   try {
     const res = await fetch(`${API_URL}/auth/google-register`, {
       method: "POST",
@@ -25,6 +24,7 @@ async function fetchGoogleUser(email: string): Promise<{ id: string; email: stri
     });
     if (!res.ok) return null;
     const data = await res.json();
+    if (data.token) return { id: data.user.id, email: data.user.email, token: data.token };
     return data.user || null;
   } catch {
     return null;
@@ -93,6 +93,9 @@ export async function buildAuthOptions(): Promise<NextAuthOptions> {
             if (dbUser) {
               token.user_id = dbUser.id;
               token.email = dbUser.email;
+              if (dbUser.token) {
+                token.accessToken = dbUser.token;
+              }
             }
           } else if (account.provider === "credentials") {
             token.user_id = user.id as string;

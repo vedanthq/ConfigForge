@@ -1,5 +1,4 @@
-const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000";
-const APP_ID = process.env.NEXT_PUBLIC_APP_ID || "";
+import { API_URL, APP_ID } from "./config";
 
 export class ApiError extends Error {
   status: number;

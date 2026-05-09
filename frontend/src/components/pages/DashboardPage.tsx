@@ -5,8 +5,7 @@ import { RuntimeConfig, RuntimeEntity } from "@/types/config";
 import LoadingSkeleton from "@/components/common/LoadingSkeleton";
 import { getApiConfig } from "@/lib/api";
 import { useApiToken } from "@/hooks/useApiToken";
-
-const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000";
+import { API_URL } from "@/lib/config";
 
 interface DashboardPageProps {
   config: RuntimeConfig;
@@ -25,7 +24,10 @@ export default function DashboardPage({ config }: DashboardPageProps) {
 
   useEffect(() => {
     const fetchAll = async () => {
-      if (!token) return;
+      if (!token) {
+        setLoading(false);
+        return;
+      }
       setLoading(true);
       setError(null);
       try {

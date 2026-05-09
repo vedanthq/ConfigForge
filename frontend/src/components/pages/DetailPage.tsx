@@ -6,8 +6,7 @@ import LoadingSkeleton from "@/components/common/LoadingSkeleton";
 import ErrorPage from "@/components/pages/ErrorPage";
 import { getApiConfig } from "@/lib/api";
 import { useApiToken } from "@/hooks/useApiToken";
-
-const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000";
+import { API_URL } from "@/lib/config";
 
 interface DetailPageProps {
   entity: RuntimeEntity;
@@ -28,7 +27,10 @@ export default function DetailPage({ entity, id }: DetailPageProps) {
     }
 
     const fetchRecord = async () => {
-      if (!token) return;
+      if (!token) {
+        setLoading(false);
+        return;
+      }
       setLoading(true);
       setError(null);
       try {
