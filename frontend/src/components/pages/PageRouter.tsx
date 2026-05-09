@@ -13,6 +13,11 @@ interface PageRouterProps {
 export default function PageRouter({ config }: PageRouterProps) {
   const pathname = usePathname();
 
+  // Let parent handle auth pages — don't try to match them against config
+  if (pathname === "/login" || pathname === "/signup") {
+    return null;
+  }
+
   const result = useMemo(() => {
     if (!pathname) return { page: null, params: {} as Record<string, string> };
 

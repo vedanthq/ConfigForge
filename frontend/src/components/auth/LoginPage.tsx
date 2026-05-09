@@ -216,6 +216,12 @@ export default function LoginPage({ config }: LoginPageProps) {
             Sign in with Google
           </button>
         )}
+        <p style={{ textAlign: "center", marginTop: "1rem", fontSize: "0.875rem", color: "#6b7280" }}>
+          Don&apos;t have an account?{" "}
+          <a href="/signup" style={{ color: "#2563eb", textDecoration: "none", fontWeight: 500 }}>
+            Sign up
+          </a>
+        </p>
       </div>
     </div>
   );
